@@ -4,8 +4,25 @@ const STORAGE = {};
 const config = new Map();
 const arguments = process.argv.slice(2);
 
+const fs = require("fs");
+const { join } = require("./path");
+const { getKeysValues } = require("./parseRDB");
+let rdb;
 function formatConfigMessage(key = "", value = "") {
   return `*2\r\n$${key.length}\r\n${key}\r\n$${value.length}\r\n${value}\r\n`;
+}
+
+if (config.get("dir") && config.get("dbfilename")) {
+  const dbPath = join(config.get("dir"), config.get("dbfilename"));
+  const isDbExists = fs.existsSync(dbPath);
+  if (isDbExists) {
+    rdb = fs.readFileSync(dbPath);
+    if (!rdb) {
+      throw `Error reading DB at provided path: ${dbPath}`;
+    }
+  } else {
+    console.log(`DB doesn't exists at provided path: ${dbPath}`);
+  }
 }
 
 const [fileDir, fileName] = [arguments[1] ?? null, arguments[3] ?? null];
@@ -42,6 +59,9 @@ const server = net.createServer((connection) => {
       );
     } else if (parsedData[2] == "config") {
       return connection.write(formatConfigMessage(value, config.get(value)));
+    } else if (parsedData[2] == "KEYS") {
+      const redis_key = getKeysValues(rdb);
+      return connection.write(serializeRESP([redis_key]));
     }
   });
 });
