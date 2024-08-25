@@ -1,10 +1,19 @@
 const net = require("net");
 
 const STORAGE = {};
+const config = new Map();
+const arguments = process.argv.slice(2);
 
+function formatConfigMessage(key = "", value = "") {
+  return `*2\r\n$${key.length}\r\n${key}\r\n$${value.length}\r\n${value}\r\n`;
+}
+
+const [fileDir, fileName] = [arguments[1] ?? null, arguments[3] ?? null];
+if (fileDir && fileName) {
+  config.set("dir", fileDir);
+  config.set("dbfilename", fileName);
+}
 const server = net.createServer((connection) => {
-  // Handle connection
-  console.log("connection");
   //   connection.write("+PONG\r\n");
   connection.on("data", (data) => {
     // connection.write("+PONG\r\n");
@@ -31,6 +40,8 @@ const server = net.createServer((connection) => {
         `$${STORAGE[parsedData[4]].length}\r\n${STORAGE[parsedData[4]]}\r\n` ||
           "$-1\r\n"
       );
+    } else if (parsedData[2] == "config") {
+      return connection.write(formatConfigMessage(value, config.get(value)));
     }
   });
 });
