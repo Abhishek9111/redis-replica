@@ -1,9 +1,7 @@
 const net = require("net");
 
-// You can use print statements as follows for debugging, they'll be visible when running tests.
-// console.log("Logs from your program will appear here!");
+const STORAGE = {};
 
-// Uncomment this block to pass the first stage
 const server = net.createServer((connection) => {
   // Handle connection
   console.log("connection");
@@ -19,6 +17,19 @@ const server = net.createServer((connection) => {
       let returnStringLen = returnString.len;
       return connection.write(
         "$" + returnStringLen + "\r\n" + returnString + "\r\n"
+      );
+    } else if (parsedData[2] == "SET") {
+      STORAGE[parsedData[4]] = parsedData[6];
+      connection.write("OK\r\n");
+      if (parsedData[10]) {
+        setTimeout(() => {
+          delete STORAGE[parsedData[4]];
+        }, parseData[10]);
+      }
+    } else if (parsedData[2] == "GET") {
+      return connection.write(
+        `$${STORAGE[parsedData[4]].length}\r\n${STORAGE[parsedData[4]]}\r\n` ||
+          "$-1\r\n"
       );
     }
   });
